@@ -1,0 +1,90 @@
+{
+    "name": "InkyPi",
+    "orientation": "horizontal",
+    "inverted_image": null,
+    "scheduler_sleep_time": 60,
+    "startup": false,
+    "display_type": "epd5in83_V2",
+    "resolution": [
+        648,
+        480
+    ],
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Loop",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [
+                    {
+                        "plugin_id": "weather",
+                        "name": "Weather",
+                        "plugin_settings": {
+                            "latitude": "30.292274851024256",
+                            "longitude": "120.36346435546875",
+                            "weatherProvider": "OpenMeteo",
+                            "units": "metric",
+                            "titleSelection": "custom",
+                            "customTitle": "",
+                            "displayRefreshTime": "true",
+                            "displayMetrics": "true",
+                            "displayGraph": "true",
+                            "displayForecast": "true",
+                            "forecastDays": "7",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 300
+                        },
+                        "latest_refresh_time": "2026-04-12T13:29:47.583523+08:00"
+                    },
+                    {
+                        "plugin_id": "crypto",
+                        "name": "Crypto",
+                        "plugin_settings": {
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 60
+                        },
+                        "latest_refresh_time": "2026-04-12T13:25:37.642530+08:00"
+                    }
+                ],
+                "current_plugin_index": 0
+            }
+        ],
+        "active_playlist": "Loop"
+    },
+    "refresh_info": {
+        "refresh_time": "2026-04-12T13:29:47.583523+08:00",
+        "image_hash": "70be18a46f9c7fc9473273a5bfded05e157face1670893e355088d6889813be9",
+        "refresh_type": "Playlist",
+        "plugin_id": "weather",
+        "playlist": "Loop",
+        "plugin_instance": "Weather"
+    },
+    "log_system_stats": "on",
+    "timezone": "Asia/Shanghai",
+    "time_format": "24h",
+    "plugin_cycle_interval_seconds": 60,
+    "image_settings": {
+        "saturation": 1.0,
+        "brightness": 1.0,
+        "sharpness": 1.0,
+        "contrast": 1.0
+    }
+}
