@@ -11,6 +11,15 @@
     <div class="subtitle">{{ currency }}</div>
   </div>
 
+  {% if status_message %}
+  <div class="status-message {{ data_status }}">
+    {{ status_message }}
+    {% if data_updated_at %}
+    <span>Updated: {{ data_updated_at }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="crypto-list">
     {% for crypto in crypto_data %}
     <div class="crypto-item">

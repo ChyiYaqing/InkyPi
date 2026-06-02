@@ -43,7 +43,7 @@
                         "refresh": {
                             "interval": 300
                         },
-                        "latest_refresh_time": "2026-04-12T13:29:47.583523+08:00"
+                        "latest_refresh_time": "2026-06-02T10:09:58.297918+08:00"
                     },
                     {
                         "plugin_id": "crypto",
@@ -61,21 +61,21 @@
                         "refresh": {
                             "interval": 60
                         },
-                        "latest_refresh_time": "2026-04-12T13:25:37.642530+08:00"
+                        "latest_refresh_time": "2026-06-02T10:14:17.580848+08:00"
                     }
                 ],
-                "current_plugin_index": 0
+                "current_plugin_index": 1
             }
         ],
         "active_playlist": "Loop"
     },
     "refresh_info": {
-        "refresh_time": "2026-04-12T13:29:47.583523+08:00",
-        "image_hash": "70be18a46f9c7fc9473273a5bfded05e157face1670893e355088d6889813be9",
+        "refresh_time": "2026-06-02T10:14:17.580848+08:00",
+        "image_hash": "3b8a5430b2e458b5c277f6ab15254b4965a5ce8b7c27eb6eda52595f3ad2bd4e",
         "refresh_type": "Playlist",
-        "plugin_id": "weather",
+        "plugin_id": "crypto",
         "playlist": "Loop",
-        "plugin_instance": "Weather"
+        "plugin_instance": "Crypto"
     },
     "log_system_stats": "on",
     "timezone": "Asia/Shanghai",
