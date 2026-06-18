@@ -1,0 +1,67 @@
+{% extends "base_plugin/settings.html" %}
+
+{% block settings %}
+<div class="form-group">
+    <label for="since" class="form-label">Time Range:</label>
+    <select id="since" name="since" class="form-input" required>
+        {% for key, label in time_ranges.items() %}
+        <option value="{{ key }}" {% if plugin_instance_settings.since == key or (not plugin_instance_settings.since and key == 'weekly') %}selected{% endif %}>
+            {{ key|capitalize }} ({{ label }})
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="language" class="form-label">Programming Language (optional):</label>
+    <input type="text" id="language" name="language" class="form-input"
+           placeholder="e.g. python — leave blank for all languages"
+           value="{{ plugin_instance_settings.language or '' }}">
+</div>
+
+<div class="form-group">
+    <label for="repoCount" class="form-label">Repositories to show:</label>
+    <input type="number" id="repoCount" name="repoCount" class="form-input" min="1" max="25"
+           value="{{ plugin_instance_settings.repoCount or '8' }}">
+</div>
+
+<div class="form-group">
+    <label class="form-label">Display Options:</label>
+
+    <div class="form-group">
+        <input type="checkbox" id="showDescription" name="showDescription" value="true"
+               {% if plugin_instance_settings.showDescription == "true" or not plugin_instance_settings.showDescription %}checked{% endif %}
+               onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Repository Description</span>
+    </div>
+
+    <div class="form-group">
+        <input type="checkbox" id="displayRefreshTime" name="displayRefreshTime" value="true"
+               {% if plugin_instance_settings.displayRefreshTime == "true" or not plugin_instance_settings.displayRefreshTime %}checked{% endif %}
+               onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Refresh Time</span>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('since').value = pluginSettings.since || 'weekly';
+            document.getElementById('language').value = pluginSettings.language || '';
+            document.getElementById('repoCount').value = pluginSettings.repoCount || '8';
+            document.getElementById('showDescription').checked = pluginSettings.showDescription === "true" || !pluginSettings.showDescription;
+            document.getElementById('showDescription').value = pluginSettings.showDescription || "true";
+            document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === "true" || !pluginSettings.displayRefreshTime;
+            document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime || "true";
+        } else {
+            document.getElementById('since').value = 'weekly';
+            document.getElementById('language').value = '';
+            document.getElementById('repoCount').value = '8';
+            document.getElementById('showDescription').checked = true;
+            document.getElementById('showDescription').value = "true";
+            document.getElementById('displayRefreshTime').checked = true;
+            document.getElementById('displayRefreshTime').value = "true";
+        }
+    });
+</script>
+{% endblock %}

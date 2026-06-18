@@ -1,0 +1,44 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="trending-dashboard">
+  {% if display_refresh_time %}
+  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
+  {% endif %}
+
+  <div class="header">
+    <div class="title">GitHub Trending</div>
+    <div class="subtitle">
+      {% if language %}{{ language }} · {% endif %}{{ period_label }}
+    </div>
+  </div>
+
+  {% if status_message %}
+  <div class="status-message {{ data_status }}">
+    {{ status_message }}
+    {% if data_updated_at %}<span>Updated: {{ data_updated_at }}</span>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="repo-list">
+    {% for repo in repos %}
+    <div class="repo-item">
+      <div class="repo-rank">{{ loop.index }}</div>
+      <div class="repo-body">
+        <div class="repo-name">{{ repo.name }}</div>
+        {% if show_description and repo.description %}
+        <div class="repo-description">{{ repo.description }}</div>
+        {% endif %}
+        <div class="repo-meta">
+          {% if repo.language %}<span class="repo-language">{{ repo.language }}</span>{% endif %}
+          {% if repo.total_stars %}<span class="repo-stars">★ {{ repo.total_stars }}</span>{% endif %}
+          {% if repo.period_stars %}<span class="repo-period">+{{ repo.period_stars }} {{ period_label }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">No trending repositories available</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,5 @@
+{
+    "display_name": "GitHub Trending",
+    "id": "github_trending",
+    "class": "GitHubTrending"
+}
