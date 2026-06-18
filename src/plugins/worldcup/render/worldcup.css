@@ -1,0 +1,157 @@
+.worldcup-dashboard {
+  font-family: var(--font-family, Arial, sans-serif);
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.last-refresh {
+  font-size: 12px;
+  color: #000;
+  text-align: right;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--primary-color, #000);
+  padding-bottom: 10px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.status-message {
+  border: 2px dashed #000;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.status-message span {
+  display: block;
+  font-size: 11px;
+  font-weight: normal;
+  margin-top: 3px;
+}
+
+.sections {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--primary-color, #000);
+  padding-bottom: 4px;
+  opacity: 0.8;
+}
+
+.match {
+  border: 2px solid var(--primary-color, #000);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: white;
+}
+
+.match.favorite {
+  border-width: 3px;
+  border-style: double;
+}
+
+.teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.team {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team.home {
+  text-align: left;
+}
+
+.team.away {
+  text-align: right;
+}
+
+.score {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.vs {
+  font-size: 12px;
+  font-weight: normal;
+  opacity: 0.6;
+  padding: 0 6px;
+}
+
+.match-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.meta-venue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  font-size: 13px;
+  opacity: 0.6;
+  padding: 8px 0;
+  font-style: italic;
+}
+
+@media (max-height: 400px) {
+  .title { font-size: 20px; }
+  .teams { font-size: 13px; }
+  .score { font-size: 15px; }
+  .match { padding: 6px 8px; }
+  .sections { gap: 12px; }
+}

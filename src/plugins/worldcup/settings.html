@@ -1,0 +1,55 @@
+{% extends "base_plugin/settings.html" %}
+
+{% block settings %}
+<div class="form-group">
+    <label for="displayMode" class="form-label">Display Mode:</label>
+    <select id="displayMode" name="displayMode" class="form-input" required>
+        {% for key, label in display_modes.items() %}
+        <option value="{{ key }}" {% if plugin_instance_settings.displayMode == key or (not plugin_instance_settings.displayMode and key == 'both') %}selected{% endif %}>
+            {{ label }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="matchCount" class="form-label">Matches per section:</label>
+    <input type="number" id="matchCount" name="matchCount" class="form-input" min="1" max="12"
+           value="{{ plugin_instance_settings.matchCount or '6' }}">
+</div>
+
+<div class="form-group">
+    <label for="favoriteTeam" class="form-label">Favorite Team (optional):</label>
+    <input type="text" id="favoriteTeam" name="favoriteTeam" class="form-input"
+           placeholder="e.g. Brazil — leave blank to show all"
+           value="{{ plugin_instance_settings.favoriteTeam or '' }}">
+</div>
+
+<div class="form-group">
+    <label class="form-label">Display Options:</label>
+    <div class="form-group">
+        <input type="checkbox" id="displayRefreshTime" name="displayRefreshTime" value="true"
+               {% if plugin_instance_settings.displayRefreshTime == "true" or not plugin_instance_settings.displayRefreshTime %}checked{% endif %}
+               onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Refresh Time</span>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('displayMode').value = pluginSettings.displayMode || 'both';
+            document.getElementById('matchCount').value = pluginSettings.matchCount || '6';
+            document.getElementById('favoriteTeam').value = pluginSettings.favoriteTeam || '';
+            document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === "true" || !pluginSettings.displayRefreshTime;
+            document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime || "true";
+        } else {
+            document.getElementById('displayMode').value = 'both';
+            document.getElementById('matchCount').value = '6';
+            document.getElementById('favoriteTeam').value = '';
+            document.getElementById('displayRefreshTime').checked = true;
+            document.getElementById('displayRefreshTime').value = "true";
+        }
+    });
+</script>
+{% endblock %}

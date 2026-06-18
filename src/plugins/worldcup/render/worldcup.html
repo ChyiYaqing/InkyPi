@@ -1,0 +1,67 @@
+{% extends "plugin.html" %}
+
+{% macro match_row(match) %}
+<div class="match {% if match.is_favorite %}favorite{% endif %}">
+  <div class="teams">
+    <span class="team home">{{ match.home }}</span>
+    {% if match.finished %}
+    <span class="score">{{ match.home_score }} - {{ match.away_score }}</span>
+    {% else %}
+    <span class="vs">vs</span>
+    {% endif %}
+    <span class="team away">{{ match.away }}</span>
+  </div>
+  <div class="match-meta">
+    {% if match.finished %}
+    <span class="meta-status">{{ match.status or 'FT' }}</span>
+    {% else %}
+    <span class="meta-time">{{ match.kickoff_display }}</span>
+    {% endif %}
+    {% if match.venue %}<span class="meta-venue">{{ match.venue }}</span>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="worldcup-dashboard">
+  {% if display_refresh_time %}
+  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
+  {% endif %}
+
+  <div class="header">
+    <div class="title">FIFA World Cup 2026</div>
+    {% if favorite_team %}<div class="subtitle">{{ favorite_team }}</div>{% endif %}
+  </div>
+
+  {% if status_message %}
+  <div class="status-message {{ data_status }}">
+    {{ status_message }}
+    {% if data_updated_at %}<span>Updated: {{ data_updated_at }}</span>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="sections">
+    {% if show_results %}
+    <div class="section">
+      <div class="section-title">Recent Results</div>
+      {% if results %}
+        {% for match in results %}{{ match_row(match) }}{% endfor %}
+      {% else %}
+        <div class="empty">No results yet</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if show_upcoming %}
+    <div class="section">
+      <div class="section-title">Upcoming Fixtures</div>
+      {% if upcoming %}
+        {% for match in upcoming %}{{ match_row(match) }}{% endfor %}
+      {% else %}
+        <div class="empty">No upcoming fixtures</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
