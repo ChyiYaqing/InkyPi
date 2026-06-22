@@ -11,14 +11,40 @@ import re
 logger = logging.getLogger(__name__)
 
 # TheSportsDB free API (test key "3", no registration required)
-SPORTSDB_SEASON_URL = "https://www.thesportsdb.com/api/v1/json/3/eventsseason.php"
+SPORTSDB_BASE = "https://www.thesportsdb.com/api/v1/json/3"
 
 # FIFA World Cup league id in TheSportsDB
 WORLD_CUP_LEAGUE_ID = "4429"
 DEFAULT_SEASON = "2026"
 
+# Rounds to pull per season. 1-3 are the group-stage matchdays; the higher codes
+# are TheSportsDB's knockout rounds (R32, R16, QF, SF, Final). Unscheduled rounds
+# simply return no events, so listing them is harmless and keeps the plugin
+# working once the tournament reaches the knockout stage.
+WORLD_CUP_ROUNDS = ["1", "2", "3", "180", "170", "160", "150", "125"]
+
+# Human-friendly stage names for each TheSportsDB round code. Group-stage rounds
+# are shown as matchdays; the knockout codes get their proper round names.
+ROUND_LABELS = {
+    "1": "Matchday 1",
+    "2": "Matchday 2",
+    "3": "Matchday 3",
+    "180": "Round of 32",
+    "170": "Round of 16",
+    "160": "Quarter-Final",
+    "150": "Semi-Final",
+    "125": "Final",
+}
+
 # Statuses that mean the match has been played
 FINISHED_STATUSES = {"FT", "AET", "PEN", "MATCH FINISHED"}
+
+# Statuses that mean the match is currently being played
+LIVE_STATUSES = {"1H", "2H", "HT", "ET", "BT", "P", "PEN LIVE", "LIVE", "INPLAY", "IN PLAY"}
+
+# A match without an explicit live status is treated as live if kickoff was
+# within this many seconds in the past (covers 90' + stoppage + half time).
+LIVE_WINDOW_SECONDS = 150 * 60
 
 DISPLAY_MODES = {
     'both': 'Results & Fixtures',
@@ -53,28 +79,23 @@ class WorldCup(BasePlugin):
             fetch_result = self.fetch_matches(DEFAULT_SEASON, tz)
             matches = self.apply_favorite(fetch_result['data'], favorite_team)
 
-            results = [m for m in matches if m['finished']]
-            upcoming = [m for m in matches if not m['finished']]
+            # Relative labels (Today / Live / etc.) depend on the current time,
+            # so they are computed at render time rather than cached.
+            for match in matches:
+                self.annotate_match(match, current_time)
 
-            # Most recent results first, soonest fixtures first
-            results = list(reversed(results))[:match_count]
-            upcoming = upcoming[:match_count]
-
-            show_results = display_mode in ('both', 'results')
-            show_upcoming = display_mode in ('both', 'upcoming')
+            ordered = self.prioritize_matches(matches, display_mode)[:match_count]
 
             dimensions = device_config.get_resolution()
             if device_config.get_config("orientation") == "vertical":
                 dimensions = dimensions[::-1]
 
             template_params = {
-                'results': results if show_results else [],
-                'upcoming': upcoming if show_upcoming else [],
-                'show_results': show_results,
-                'show_upcoming': show_upcoming,
+                'matches': ordered,
                 'favorite_team': favorite_team,
                 'display_refresh_time': refresh_time,
                 'last_refresh_time': current_time.strftime("%b %d, %I:%M %p"),
+                'timezone_label': current_time.strftime("%Z") or timezone_name,
                 'data_status': fetch_result['status'],
                 'status_message': fetch_result['message'],
                 'data_updated_at': fetch_result.get('updated_at'),
@@ -98,6 +119,106 @@ class WorldCup(BasePlugin):
         except (TypeError, ValueError):
             return 6
         return max(1, min(count, 12))
+
+    def annotate_match(self, match, now):
+        """Attach render-time labels (state, relative day/time, live minute)."""
+        kickoff = None
+        iso = match.get('kickoff_iso')
+        if iso:
+            try:
+                kickoff = datetime.fromisoformat(iso)
+            except ValueError:
+                kickoff = None
+
+        match['sort_dt'] = kickoff or now
+        match['is_today'] = bool(kickoff) and kickoff.date() == now.date()
+
+        status_upper = (match.get('status') or '').strip().upper()
+        has_scores = match['home_score'] is not None and match['away_score'] is not None
+
+        # Resolve state authoritatively here: a live match already has a score,
+        # so "has scores" alone cannot mean finished. Prefer explicit statuses,
+        # then fall back to the kickoff time.
+        is_live = False
+        is_finished = False
+        live_minute = ''
+        if status_upper in LIVE_STATUSES:
+            is_live = True
+        elif status_upper and status_upper.rstrip("'+").isdigit():
+            is_live = True
+            live_minute = status_upper if status_upper.endswith("'") else f"{status_upper}'"
+        elif status_upper in FINISHED_STATUSES:
+            is_finished = True
+        elif kickoff:
+            elapsed = (now - kickoff).total_seconds()
+            if elapsed < 0:
+                pass  # upcoming
+            elif elapsed <= LIVE_WINDOW_SECONDS:
+                is_live = True
+            else:
+                is_finished = True
+        elif has_scores:
+            is_finished = True
+
+        if is_live and not live_minute:
+            if status_upper == 'HT':
+                live_minute = 'HT'
+            elif kickoff:
+                # No exact minute from the feed; estimate from kickoff but only
+                # show it while it stays realistic, otherwise just say "Live".
+                elapsed_min = int((now - kickoff).total_seconds() // 60)
+                if 0 < elapsed_min <= 105:
+                    live_minute = f"{elapsed_min}'"
+
+        if is_live:
+            match['state'] = 'live'
+        elif is_finished:
+            match['state'] = 'finished'
+        else:
+            match['state'] = 'upcoming'
+        match['finished'] = is_finished
+
+        match['live_minute'] = live_minute
+        match['day_label'] = self.relative_day(kickoff, now)
+        match['time_label'] = kickoff.strftime("%-I:%M %p") if kickoff else 'TBD'
+
+        rnd = (match.get('round') or '').strip()
+        stage = ROUND_LABELS.get(rnd) or (f"Round {rnd}" if rnd else '')
+        match['round_label'] = f"World Cup · {stage}" if stage else "World Cup"
+
+    def relative_day(self, kickoff, now):
+        if not kickoff:
+            return 'TBD'
+        delta = (kickoff.date() - now.date()).days
+        if delta == 0:
+            return 'Today'
+        if delta == 1:
+            return 'Tomorrow'
+        if delta == -1:
+            return 'Yesterday'
+        return kickoff.strftime("%b %-d")
+
+    def prioritize_matches(self, matches, display_mode):
+        """Order matches so the most relevant ones surface first.
+
+        Live games come first, then everything else happening today, then the
+        soonest upcoming fixtures, and finally the most recent past results.
+        """
+        live = [m for m in matches if m['state'] == 'live']
+        today = [m for m in matches if m['state'] != 'live' and m['is_today']]
+        upcoming = [m for m in matches if m['state'] == 'upcoming' and not m['is_today']]
+        past = [m for m in matches if m['state'] == 'finished' and not m['is_today']]
+
+        live.sort(key=lambda m: m['sort_dt'])
+        today.sort(key=lambda m: m['sort_dt'])
+        upcoming.sort(key=lambda m: m['sort_dt'])
+        past.sort(key=lambda m: m['sort_dt'], reverse=True)
+
+        if display_mode == 'results':
+            return live + [m for m in today if m['state'] == 'finished'] + past
+        if display_mode == 'upcoming':
+            return live + [m for m in today if m['state'] != 'finished'] + upcoming
+        return live + today + upcoming + past
 
     def apply_favorite(self, matches, favorite_team):
         if not favorite_team:
@@ -144,11 +265,45 @@ class WorldCup(BasePlugin):
             raise RuntimeError(f"Error processing World Cup data: {str(e)}")
 
     def fetch_worldcup_data(self, season):
-        params = {'id': WORLD_CUP_LEAGUE_ID, 's': season}
-        response = requests.get(SPORTSDB_SEASON_URL, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        return data.get('events') or []
+        """Merge several TheSportsDB feeds so live and upcoming games are included.
+
+        On the free key every endpoint only returns a small, truncated slice, so
+        no single feed has the whole schedule. The per-round feeds give the bulk
+        of the fixtures (including future rounds), while the past/next feeds add
+        the currently-live game and the next kickoff. Feeds are merged and
+        de-duplicated by event id; the round feeds come first and the fresher
+        past/next feeds come last so their live status wins on any conflict.
+        """
+        sources = [
+            (f"{SPORTSDB_BASE}/eventsround.php",
+             {'id': WORLD_CUP_LEAGUE_ID, 'r': rnd, 's': season})
+            for rnd in WORLD_CUP_ROUNDS
+        ]
+        sources += [
+            (f"{SPORTSDB_BASE}/eventspastleague.php", {'id': WORLD_CUP_LEAGUE_ID}),
+            (f"{SPORTSDB_BASE}/eventsnextleague.php", {'id': WORLD_CUP_LEAGUE_ID}),
+        ]
+
+        merged = {}
+        succeeded = False
+        last_error = None
+        for url, params in sources:
+            try:
+                response = requests.get(url, params=params, timeout=10)
+                response.raise_for_status()
+                events = response.json().get('events') or []
+                succeeded = True
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                continue
+            for event in events:
+                key = event.get('idEvent') or \
+                    f"{event.get('strTimestamp')}-{event.get('strHomeTeam')}"
+                merged[key] = event
+
+        if not succeeded and last_error is not None:
+            raise last_error
+        return list(merged.values())
 
     def parse_matches(self, events, tz):
         matches = []
@@ -170,6 +325,7 @@ class WorldCup(BasePlugin):
                 'status': status,
                 'finished': finished,
                 'kickoff_display': kickoff.strftime("%b %d, %I:%M %p") if kickoff else 'TBD',
+                'kickoff_iso': kickoff.isoformat() if kickoff else None,
                 'sort_key': timestamp or '',
                 'round': str(event.get('intRound') or '').strip(),
                 'venue': (event.get('strVenue') or '').strip(),

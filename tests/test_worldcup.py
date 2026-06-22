@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 
 import pytest
 import pytz
@@ -116,3 +117,61 @@ def test_fetch_matches_returns_offline_data_without_cache(worldcup_plugin, tz):
     assert result["status"] == "offline"
     assert result["message"] == "Offline - schedule unavailable"
     assert result["data"] == []
+
+
+def _match(state_kickoff_offset_min, finished, status="", scores=(None, None)):
+    """Build a parsed-match dict relative to a fixed 'now' for annotation tests."""
+    now = datetime(2026, 6, 18, 18, 0, tzinfo=pytz.utc)
+    kickoff = now + timedelta(minutes=state_kickoff_offset_min)
+    return {
+        "home": "Home",
+        "away": "Away",
+        "home_score": scores[0],
+        "away_score": scores[1],
+        "status": status,
+        "finished": finished,
+        "kickoff_iso": kickoff.isoformat(),
+        "round": "2",
+        "is_favorite": False,
+    }, now
+
+
+def test_annotate_match_detects_live_by_time_window(worldcup_plugin):
+    match, now = _match(-50, finished=False)  # kicked off 50 min ago, still playing
+    worldcup_plugin.annotate_match(match, now)
+    assert match["state"] == "live"
+    assert match["live_minute"] == "50'"
+    assert match["is_today"] is True
+
+
+def test_annotate_match_relative_day_labels(worldcup_plugin):
+    upcoming, now = _match(60, finished=False)  # later today
+    worldcup_plugin.annotate_match(upcoming, now)
+    assert upcoming["state"] == "upcoming"
+    assert upcoming["day_label"] == "Today"
+
+    tomorrow, now = _match(60 * 24, finished=False)
+    worldcup_plugin.annotate_match(tomorrow, now)
+    assert tomorrow["day_label"] == "Tomorrow"
+
+    finished, now = _match(-60 * 30, finished=True, status="FT", scores=(1, 0))
+    worldcup_plugin.annotate_match(finished, now)
+    assert finished["state"] == "finished"
+    assert finished["round_label"] == "World Cup · Matchday 2"
+
+
+def test_prioritize_matches_orders_live_today_upcoming_past(worldcup_plugin):
+    live, now = _match(-30, finished=False)
+    today_done, _ = _match(-60 * 3, finished=True, status="FT", scores=(2, 1))
+    future, _ = _match(60 * 48, finished=False)
+    past, _ = _match(-60 * 50, finished=True, status="FT", scores=(0, 0))
+
+    matches = [past, future, today_done, live]
+    for m in matches:
+        worldcup_plugin.annotate_match(m, now)
+
+    ordered = worldcup_plugin.prioritize_matches(matches, "both")
+    assert [m["state"] for m in ordered] == ["live", "finished", "upcoming", "finished"]
+    assert ordered[0] is live
+    assert ordered[1] is today_done
+    assert ordered[3] is past

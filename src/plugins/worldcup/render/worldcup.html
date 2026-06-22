@@ -1,23 +1,31 @@
 {% extends "plugin.html" %}
 
-{% macro match_row(match) %}
-<div class="match {% if match.is_favorite %}favorite{% endif %}">
-  <div class="teams">
-    <span class="team home">{{ match.home }}</span>
-    {% if match.finished %}
-    <span class="score">{{ match.home_score }} - {{ match.away_score }}</span>
-    {% else %}
-    <span class="vs">vs</span>
-    {% endif %}
-    <span class="team away">{{ match.away }}</span>
-  </div>
-  <div class="match-meta">
-    {% if match.finished %}
-    <span class="meta-status">{{ match.status or 'FT' }}</span>
-    {% else %}
-    <span class="meta-time">{{ match.kickoff_display }}</span>
-    {% endif %}
-    {% if match.venue %}<span class="meta-venue">{{ match.venue }}</span>{% endif %}
+{% macro match_card(match) %}
+<div class="match state-{{ match.state }} {% if match.is_favorite %}favorite{% endif %}">
+  <div class="match-label">{{ match.round_label }}</div>
+  <div class="match-body">
+    <div class="teams">
+      <div class="team-row">
+        <span class="team">{{ match.home }}</span>
+        {% if match.state != 'upcoming' %}<span class="score">{{ match.home_score if match.home_score is not none else '-' }}</span>{% endif %}
+      </div>
+      <div class="team-row">
+        <span class="team">{{ match.away }}</span>
+        {% if match.state != 'upcoming' %}<span class="score">{{ match.away_score if match.away_score is not none else '-' }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="status">
+      {% if match.state == 'live' %}
+        <span class="live">Live</span>
+        {% if match.live_minute %}<span class="live-min">{{ match.live_minute }}</span>{% endif %}
+      {% elif match.state == 'finished' %}
+        <span class="ft">FT</span>
+        <span class="day">{{ match.day_label }}</span>
+      {% else %}
+        <span class="day">{{ match.day_label }}</span>
+        <span class="time">{{ match.time_label }}</span>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endmacro %}
@@ -40,28 +48,14 @@
   </div>
   {% endif %}
 
-  <div class="sections">
-    {% if show_results %}
-    <div class="section">
-      <div class="section-title">Recent Results</div>
-      {% if results %}
-        {% for match in results %}{{ match_row(match) }}{% endfor %}
-      {% else %}
-        <div class="empty">No results yet</div>
-      {% endif %}
-    </div>
-    {% endif %}
-
-    {% if show_upcoming %}
-    <div class="section">
-      <div class="section-title">Upcoming Fixtures</div>
-      {% if upcoming %}
-        {% for match in upcoming %}{{ match_row(match) }}{% endfor %}
-      {% else %}
-        <div class="empty">No upcoming fixtures</div>
-      {% endif %}
-    </div>
-    {% endif %}
+  {% if matches %}
+  <div class="match-grid">
+    {% for match in matches %}{{ match_card(match) }}{% endfor %}
   </div>
+  {% else %}
+  <div class="empty">No matches to show</div>
+  {% endif %}
+
+  <div class="footer">All times are in {{ timezone_label }}</div>
 </div>
 {% endblock %}
